@@ -31,10 +31,10 @@ fun ScheduleScreen(
     var endHour by remember { mutableIntStateOf(existingConfig?.endHour ?: 17) }
     var endMinute by remember { mutableIntStateOf(existingConfig?.endMinute ?: 0) }
 
-    val startTimePickerState = remember(startHour, startMinute) {
+    val startTimePickerState = remember(showStartPicker) {
         TimePickerState(startHour, startMinute, is24Hour = true)
     }
-    val endTimePickerState = remember(endHour, endMinute) {
+    val endTimePickerState = remember(showEndPicker) {
         TimePickerState(endHour, endMinute, is24Hour = true)
     }
 
@@ -123,8 +123,6 @@ fun ScheduleScreen(
                         Text("Start Time")
                         FilledTonalButton(onClick = {
                             showStartPicker = true
-                            startTimePickerState.hour = startHour
-                            startTimePickerState.minute = startMinute
                         }) {
                             Text(String.format("%02d:%02d", startHour, startMinute))
                         }
@@ -138,8 +136,6 @@ fun ScheduleScreen(
                         Text("End Time")
                         FilledTonalButton(onClick = {
                             showEndPicker = true
-                            endTimePickerState.hour = endHour
-                            endTimePickerState.minute = endMinute
                         }) {
                             Text(String.format("%02d:%02d", endHour, endMinute))
                         }
