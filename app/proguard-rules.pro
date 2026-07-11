@@ -1,0 +1,2 @@
+-keep class com.v2ray.ang.** { *; }
+-keep class com.v2rayscheduler.model.** { *; }
