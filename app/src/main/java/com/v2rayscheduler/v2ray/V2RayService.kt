@@ -5,18 +5,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.net.VpnService
 import android.os.Build
 import android.os.IBinder
-import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
-import com.v2ray.ang.util.V2RayUtils
-import com.v2rayscheduler.R
 
-class V2RayService : VpnService() {
-
-    private var vpnInterface: ParcelFileDescriptor? = null
-    private var isRunning = false
+class V2RayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
@@ -25,55 +18,16 @@ class V2RayService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val configJson = intent?.getStringExtra("config") ?: return START_NOT_STICKY
+        val label = intent?.getStringExtra("label") ?: "V2Ray"
 
-        val notification = buildNotification()
+        val notification = buildNotification(label)
         startForeground(NOTIFICATION_ID, notification)
 
-        startVPN(configJson)
+        V2RayController.getInstance(this).startV2Ray(configJson)
 
-        return START_STICKY
-    }
+        stopSelf()
 
-    private fun startVPN(configJson: String) {
-        try {
-            val builder = Builder().apply {
-                setMtu(1500)
-                addAddress("10.0.0.2", 32)
-                addRoute("0.0.0.0", 0)
-                addDnsServer("8.8.8.8")
-                addDnsServer("1.1.1.1")
-                setSession(getString(R.string.app_name))
-            }
-
-            vpnInterface = establish()
-            if (vpnInterface == null) return
-
-            V2RayUtils.startV2Ray(configJson, object : V2RayUtils.V2RayCallback {
-                override fun onSuccess() {
-                    isRunning = true
-                }
-
-                override fun onError(msg: String) {
-                    isRunning = false
-                    stopSelf()
-                }
-            })
-
-        } catch (e: Exception) {
-            stopSelf()
-        }
-    }
-
-    override fun onDestroy() {
-        stopVPN()
-        super.onDestroy()
-    }
-
-    private fun stopVPN() {
-        isRunning = false
-        V2RayUtils.stopV2Ray()
-        vpnInterface?.close()
-        vpnInterface = null
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -82,7 +36,7 @@ class V2RayService : VpnService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "V2Ray Service",
+                "V2Ray Scheduler",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "V2Ray connection status"
@@ -92,10 +46,10 @@ class V2RayService : VpnService() {
         }
     }
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(label: String): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("V2Ray Scheduler")
-            .setContentText("VPN is running")
+            .setContentText("Starting $label ...")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()

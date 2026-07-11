@@ -4,14 +4,17 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.v2rayscheduler.model.ScheduleConfig
-import com.v2rayscheduler.v2ray.V2RayController
+import com.v2rayscheduler.v2ray.V2RayService
 
 class ScheduleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val configJson = intent.getStringExtra("config_json") ?: return
         val config = ScheduleConfig.fromJson(configJson)
 
-        val controller = V2RayController.getInstance(context)
-        controller.startV2Ray(config.configContent)
+        val serviceIntent = Intent(context, V2RayService::class.java).apply {
+            putExtra("config", config.configContent)
+            putExtra("label", config.label)
+        }
+        context.startForegroundService(serviceIntent)
     }
 }
