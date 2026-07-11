@@ -20,11 +20,18 @@ fun ScheduleScreen(
 ) {
     var label by remember { mutableStateOf(existingConfig?.label ?: "") }
     var configContent by remember { mutableStateOf(existingConfig?.configContent ?: "") }
-    var hour by remember { mutableIntStateOf(existingConfig?.hour ?: 8) }
-    var minute by remember { mutableIntStateOf(existingConfig?.minute ?: 0) }
     var isRepeatDaily by remember { mutableStateOf(existingConfig?.isRepeatDaily ?: true) }
     var showTimePicker by remember { mutableStateOf(false) }
     var configError by remember { mutableStateOf(false) }
+    val timePickerState = remember {
+        TimePickerState(
+            initialHour = existingConfig?.hour ?: 8,
+            initialMinute = existingConfig?.minute ?: 0,
+            is24Hour = true
+        )
+    }
+    var selectedHour by remember { mutableIntStateOf(timePickerState.hour) }
+    var selectedMinute by remember { mutableIntStateOf(timePickerState.minute) }
 
     Scaffold(
         topBar = {
@@ -44,8 +51,8 @@ fun ScheduleScreen(
                                 id = existingConfig?.id ?: java.util.UUID.randomUUID().toString(),
                                 label = label,
                                 configContent = configContent,
-                                hour = hour,
-                                minute = minute,
+                                hour = selectedHour,
+                                minute = selectedMinute,
                                 isEnabled = existingConfig?.isEnabled ?: true,
                                 isRepeatDaily = isRepeatDaily
                             )
@@ -102,37 +109,26 @@ fun ScheduleScreen(
                 Text("Time", style = MaterialTheme.typography.titleSmall)
                 FilledTonalButton(onClick = { showTimePicker = true }) {
                     Text(
-                        String.format(
-                            "%02d:%02d %s",
-                            if (hour > 12) hour - 12 else if (hour == 0) 12 else hour,
-                            minute,
-                            if (hour < 12) "AM" else "PM"
-                        )
+                        String.format("%02d:%02d", selectedHour, selectedMinute)
                     )
                 }
             }
 
             if (showTimePicker) {
-                TimePickerState(
-                    initialHour = hour,
-                    initialMinute = minute,
-                    is24Hour = false
-                ).let { state ->
-                    TimePicker(state = state)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = { showTimePicker = false }) {
-                            Text("Cancel")
-                        }
-                        TextButton(onClick = {
-                            hour = state.hour
-                            minute = state.minute
-                            showTimePicker = false
-                        }) {
-                            Text("OK")
-                        }
+                TimePicker(state = timePickerState)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { showTimePicker = false }) {
+                        Text("Cancel")
+                    }
+                    TextButton(onClick = {
+                        selectedHour = timePickerState.hour
+                        selectedMinute = timePickerState.minute
+                        showTimePicker = false
+                    }) {
+                        Text("OK")
                     }
                 }
             }
