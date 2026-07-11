@@ -21,17 +21,22 @@ fun ScheduleScreen(
     var label by remember { mutableStateOf(existingConfig?.label ?: "") }
     var configContent by remember { mutableStateOf(existingConfig?.configContent ?: "") }
     var isRepeatDaily by remember { mutableStateOf(existingConfig?.isRepeatDaily ?: true) }
-    var showTimePicker by remember { mutableStateOf(false) }
+
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
     var configError by remember { mutableStateOf(false) }
-    val timePickerState = remember {
-        TimePickerState(
-            initialHour = existingConfig?.hour ?: 8,
-            initialMinute = existingConfig?.minute ?: 0,
-            is24Hour = true
-        )
+
+    var startHour by remember { mutableIntStateOf(existingConfig?.startHour ?: 8) }
+    var startMinute by remember { mutableIntStateOf(existingConfig?.startMinute ?: 0) }
+    var endHour by remember { mutableIntStateOf(existingConfig?.endHour ?: 17) }
+    var endMinute by remember { mutableIntStateOf(existingConfig?.endMinute ?: 0) }
+
+    val startTimePickerState = remember(startHour, startMinute) {
+        TimePickerState(startHour, startMinute, is24Hour = true)
     }
-    var selectedHour by remember { mutableIntStateOf(timePickerState.hour) }
-    var selectedMinute by remember { mutableIntStateOf(timePickerState.minute) }
+    val endTimePickerState = remember(endHour, endMinute) {
+        TimePickerState(endHour, endMinute, is24Hour = true)
+    }
 
     Scaffold(
         topBar = {
@@ -51,8 +56,10 @@ fun ScheduleScreen(
                                 id = existingConfig?.id ?: java.util.UUID.randomUUID().toString(),
                                 label = label,
                                 configContent = configContent,
-                                hour = selectedHour,
-                                minute = selectedMinute,
+                                startHour = startHour,
+                                startMinute = startMinute,
+                                endHour = endHour,
+                                endMinute = endMinute,
                                 isEnabled = existingConfig?.isEnabled ?: true,
                                 isRepeatDaily = isRepeatDaily
                             )
@@ -101,36 +108,79 @@ fun ScheduleScreen(
                 maxLines = 10
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Time", style = MaterialTheme.typography.titleSmall)
-                FilledTonalButton(onClick = { showTimePicker = true }) {
-                    Text(
-                        String.format("%02d:%02d", selectedHour, selectedMinute)
-                    )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Schedule Time", style = MaterialTheme.typography.titleSmall)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Start Time")
+                        FilledTonalButton(onClick = {
+                            showStartPicker = true
+                            startTimePickerState.hour = startHour
+                            startTimePickerState.minute = startMinute
+                        }) {
+                            Text(String.format("%02d:%02d", startHour, startMinute))
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("End Time")
+                        FilledTonalButton(onClick = {
+                            showEndPicker = true
+                            endTimePickerState.hour = endHour
+                            endTimePickerState.minute = endMinute
+                        }) {
+                            Text(String.format("%02d:%02d", endHour, endMinute))
+                        }
+                    }
                 }
             }
 
-            if (showTimePicker) {
-                TimePicker(state = timePickerState)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = { showTimePicker = false }) {
-                        Text("Cancel")
+            if (showStartPicker) {
+                AlertDialog(
+                    onDismissRequest = { showStartPicker = false },
+                    title = { Text("Select Start Time") },
+                    text = { TimePicker(state = startTimePickerState) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            startHour = startTimePickerState.hour
+                            startMinute = startTimePickerState.minute
+                            showStartPicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showStartPicker = false }) { Text("Cancel") }
                     }
-                    TextButton(onClick = {
-                        selectedHour = timePickerState.hour
-                        selectedMinute = timePickerState.minute
-                        showTimePicker = false
-                    }) {
-                        Text("OK")
+                )
+            }
+
+            if (showEndPicker) {
+                AlertDialog(
+                    onDismissRequest = { showEndPicker = false },
+                    title = { Text("Select End Time") },
+                    text = { TimePicker(state = endTimePickerState) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            endHour = endTimePickerState.hour
+                            endMinute = endTimePickerState.minute
+                            showEndPicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEndPicker = false }) { Text("Cancel") }
                     }
-                }
+                )
             }
 
             Row(

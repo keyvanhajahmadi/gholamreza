@@ -30,7 +30,6 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val viewModel: MainViewModel = viewModel()
                     val schedules by viewModel.schedules.collectAsState()
-                    val connectionState by viewModel.connectionState.collectAsState()
 
                     var showScheduleScreen by remember { mutableStateOf(false) }
                     var editingConfig by remember { mutableStateOf<ScheduleConfig?>(null) }
@@ -55,7 +54,6 @@ class MainActivity : ComponentActivity() {
                     } else {
                         MainScreen(
                             schedules = schedules,
-                            connectionState = connectionState,
                             onAddSchedule = {
                                 editingConfig = null
                                 showScheduleScreen = true
@@ -69,12 +67,6 @@ class MainActivity : ComponentActivity() {
                             },
                             onToggleSchedule = { config ->
                                 viewModel.toggleSchedule(config)
-                            },
-                            onToggleConnection = {
-                                viewModel.toggleConnection()
-                            },
-                            onImportConfig = {
-                                viewModel.setConfigFromClipboard()
                             }
                         )
                     }

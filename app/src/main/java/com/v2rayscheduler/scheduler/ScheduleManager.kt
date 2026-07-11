@@ -14,23 +14,32 @@ import java.util.concurrent.TimeUnit
 
 class ScheduleManager(private val context: Context) {
 
-    fun scheduleAlarm(config: ScheduleConfig) {
+    fun scheduleStartAlarm(config: ScheduleConfig) {
         if (!config.isEnabled) return
+        scheduleAlarm(config, config.startHour, config.startMinute, "start")
+    }
 
+    fun scheduleEndAlarm(config: ScheduleConfig) {
+        if (!config.isEnabled) return
+        scheduleAlarm(config, config.endHour, config.endMinute, "end")
+    }
+
+    private fun scheduleAlarm(config: ScheduleConfig, hour: Int, minute: Int, action: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, ScheduleReceiver::class.java).apply {
             putExtra("config_json", config.toJson())
+            putExtra("action", action)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            config.id.hashCode(),
+            config.id.hashCode() + if (action == "start") 0 else 1,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, config.hour)
-            set(Calendar.MINUTE, config.minute)
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             if (before(Calendar.getInstance())) {
@@ -54,45 +63,20 @@ class ScheduleManager(private val context: Context) {
         }
     }
 
-    fun cancelAlarm(config: ScheduleConfig) {
+    fun cancelAlarms(config: ScheduleConfig) {
+        cancelAlarm(config, "start")
+        cancelAlarm(config, "end")
+    }
+
+    private fun cancelAlarm(config: ScheduleConfig, action: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, ScheduleReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            config.id.hashCode(),
+            config.id.hashCode() + if (action == "start") 0 else 1,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(pendingIntent)
-    }
-
-    fun scheduleWorker(config: ScheduleConfig) {
-        if (!config.isEnabled) return
-
-        val delay = calculateDelay(config.hour, config.minute)
-        val workRequest = OneTimeWorkRequestBuilder<ConnectionWorker>()
-            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-            .addTag("v2ray_schedule_${config.id}")
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "v2ray_schedule_${config.id}",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-    }
-
-    private fun calculateDelay(hour: Int, minute: Int): Long {
-        val now = Calendar.getInstance()
-        val target = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        if (target.before(now)) {
-            target.add(Calendar.DAY_OF_MONTH, 1)
-        }
-        return target.timeInMillis - now.timeInMillis
     }
 }

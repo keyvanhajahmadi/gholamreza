@@ -15,7 +15,8 @@ class BootReceiver : BroadcastReceiver() {
             val manager = ScheduleManager(context)
             configs.forEach { config ->
                 if (config.isEnabled) {
-                    manager.scheduleAlarm(config)
+                    manager.scheduleStartAlarm(config)
+                    manager.scheduleEndAlarm(config)
                 }
             }
         }

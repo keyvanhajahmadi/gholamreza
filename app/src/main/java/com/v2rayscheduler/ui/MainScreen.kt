@@ -12,20 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.v2rayscheduler.model.ConnectionState
 import com.v2rayscheduler.model.ScheduleConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     schedules: List<ScheduleConfig>,
-    connectionState: ConnectionState,
     onAddSchedule: () -> Unit,
     onEditSchedule: (ScheduleConfig) -> Unit,
     onDeleteSchedule: (ScheduleConfig) -> Unit,
-    onToggleSchedule: (ScheduleConfig) -> Unit,
-    onToggleConnection: () -> Unit,
-    onImportConfig: () -> Unit
+    onToggleSchedule: (ScheduleConfig) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -48,14 +44,6 @@ fun MainScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            ConnectionStatusCard(
-                state = connectionState,
-                onToggle = onToggleConnection,
-                onImportConfig = onImportConfig
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
             Text(
                 text = "Scheduled Tasks",
                 style = MaterialTheme.typography.titleMedium,
@@ -76,71 +64,6 @@ fun MainScreen(
                             onToggle = { onToggleSchedule(schedule) }
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ConnectionStatusCard(
-    state: ConnectionState,
-    onToggle: () -> Unit,
-    onImportConfig: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = when (state) {
-                ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primaryContainer
-                ConnectionState.DISCONNECTED -> MaterialTheme.colorScheme.surfaceVariant
-                ConnectionState.CONNECTING -> MaterialTheme.colorScheme.tertiaryContainer
-                ConnectionState.ERROR -> MaterialTheme.colorScheme.errorContainer
-            }
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(
-                    text = "Connection Status",
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Text(
-                    text = when (state) {
-                        ConnectionState.CONNECTED -> "Connected"
-                        ConnectionState.DISCONNECTED -> "Disconnected"
-                        ConnectionState.CONNECTING -> "Connecting..."
-                        ConnectionState.ERROR -> "Error"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = when (state) {
-                        ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primary
-                        ConnectionState.ERROR -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                )
-            }
-            Row {
-                if (state == ConnectionState.DISCONNECTED) {
-                    IconButton(onClick = onImportConfig) {
-                        Icon(Icons.Default.FileOpen, contentDescription = "Import config")
-                    }
-                }
-                FilledTonalButton(onClick = onToggle) {
-                    Icon(
-                        imageVector = if (state == ConnectionState.CONNECTED)
-                            Icons.Default.PowerSettingsNew else Icons.Default.PlayArrow,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (state == ConnectionState.CONNECTED) "Stop" else "Start")
                 }
             }
         }
@@ -172,12 +95,7 @@ private fun ScheduleCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = String.format(
-                        "Time: %02d:%02d %s",
-                        if (config.hour > 12) config.hour - 12 else if (config.hour == 0) 12 else config.hour,
-                        config.minute,
-                        if (config.hour < 12) "AM" else "PM"
-                    ),
+                    text = "${String.format("%02d:%02d", config.startHour, config.startMinute)} - ${String.format("%02d:%02d", config.endHour, config.endMinute)}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }

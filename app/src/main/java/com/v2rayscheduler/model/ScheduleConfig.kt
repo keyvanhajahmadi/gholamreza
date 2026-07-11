@@ -7,8 +7,10 @@ data class ScheduleConfig(
     val id: String = java.util.UUID.randomUUID().toString(),
     val label: String = "",
     val configContent: String = "",
-    val hour: Int = 0,
-    val minute: Int = 0,
+    val startHour: Int = 8,
+    val startMinute: Int = 0,
+    val endHour: Int = 17,
+    val endMinute: Int = 0,
     val isEnabled: Boolean = true,
     val isRepeatDaily: Boolean = true
 ) {
