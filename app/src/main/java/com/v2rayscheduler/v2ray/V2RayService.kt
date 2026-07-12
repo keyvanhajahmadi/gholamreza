@@ -9,7 +9,6 @@ import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
-import go.Seq
 import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
 import libv2ray.Libv2ray
@@ -22,7 +21,6 @@ class V2RayService : VpnService() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        Seq.setContext(this)
         Libv2ray.initCoreEnv(filesDir.absolutePath, "")
     }
 
