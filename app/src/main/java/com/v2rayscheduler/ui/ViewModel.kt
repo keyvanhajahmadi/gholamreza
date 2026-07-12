@@ -2,8 +2,6 @@ package com.v2rayscheduler.ui
 
 import android.app.Application
 import android.content.Context
-import android.content.Intent
-import android.net.VpnService
 import androidx.lifecycle.AndroidViewModel
 import com.v2rayscheduler.model.ConnectionState
 import com.v2rayscheduler.model.ScheduleConfig
@@ -24,6 +22,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
+    private var _lastConfig: String? = null
 
     init {
         loadSchedules()
@@ -78,16 +78,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleConnection(configJson: String? = null) {
         when (_connectionState.value) {
             ConnectionState.DISCONNECTED -> {
-                val ctx = getApplication<Application>()
-                val intent = VpnService.prepare(ctx)
-                if (intent != null) return
-
                 _connectionState.value = ConnectionState.CONNECTING
                 val config = configJson ?: _lastConfig
                 if (config != null) {
                     _lastConfig = config
-                    val success = v2rayController.startV2Ray(config)
-                    _connectionState.value = if (success) ConnectionState.CONNECTED else ConnectionState.ERROR
+                    v2rayController.startV2Ray(config)
+                    _connectionState.value = ConnectionState.CONNECTED
+                } else {
+                    _connectionState.value = ConnectionState.ERROR
                 }
             }
             ConnectionState.CONNECTED -> {
@@ -97,6 +95,4 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             else -> {}
         }
     }
-
-    private var _lastConfig: String? = null
 }

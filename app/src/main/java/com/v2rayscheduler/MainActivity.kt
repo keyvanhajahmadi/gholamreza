@@ -1,5 +1,8 @@
 package com.v2rayscheduler
 
+import android.app.Activity
+import android.content.Intent
+import android.net.VpnService
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,6 +23,11 @@ import com.v2rayscheduler.ui.ScheduleScreen
 import com.v2rayscheduler.ui.theme.V2RaySchedulerTheme
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        private const val VPN_REQUEST_CODE = 1001
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -71,12 +79,26 @@ class MainActivity : ComponentActivity() {
                                 viewModel.toggleSchedule(config)
                             },
                             onToggleConnection = {
-                                viewModel.toggleConnection()
+                                val intent = VpnService.prepare(this@MainActivity)
+                                if (intent != null) {
+                                    startActivityForResult(intent, VPN_REQUEST_CODE)
+                                } else {
+                                    viewModel.toggleConnection()
+                                }
                             }
                         )
                     }
                 }
             }
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == VPN_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            val viewModel: MainViewModel = viewModel()
+            viewModel.toggleConnection()
         }
     }
 }

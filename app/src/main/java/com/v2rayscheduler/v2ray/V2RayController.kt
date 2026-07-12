@@ -24,9 +24,6 @@ class V2RayController private constructor(private val context: Context) {
     fun startV2Ray(configContent: String): Boolean {
         if (isRunning) return true
 
-        val intent = VpnService.prepare(context)
-        if (intent != null) return false
-
         try {
             val serviceIntent = Intent(context, V2RayService::class.java).apply {
                 putExtra("config", configContent)
