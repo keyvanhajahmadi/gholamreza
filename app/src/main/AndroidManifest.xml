@@ -30,7 +30,7 @@
         <service
             android:name=".v2ray.V2RayService"
             android:exported="false"
-            android:foregroundServiceType="vpn" />
+            android:foregroundServiceType="specialUse" />
 
         <receiver
             android:name=".scheduler.BootReceiver"
