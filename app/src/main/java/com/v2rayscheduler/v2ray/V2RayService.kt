@@ -44,7 +44,7 @@ class V2RayService : VpnService() {
                 addDnsServer("1.1.1.1")
                 setSession("V2RayScheduler")
             }
-            vpnInterface = establish()
+            vpnInterface = builder.establish()
             if (vpnInterface == null) return
 
             val tunFd = vpnInterface!!.fd
