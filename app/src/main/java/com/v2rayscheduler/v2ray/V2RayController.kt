@@ -3,7 +3,6 @@ package com.v2rayscheduler.v2ray
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
-import com.v2rayscheduler.model.ConnectionState
 
 class V2RayController private constructor(private val context: Context) {
 
@@ -18,10 +17,9 @@ class V2RayController private constructor(private val context: Context) {
         }
     }
 
-    val state: ConnectionState
-        get() = if (isRunning) ConnectionState.CONNECTED else ConnectionState.DISCONNECTED
-
-    private var isRunning = false
+    @Volatile
+    var isRunning = false
+        private set
 
     fun startV2Ray(configContent: String): Boolean {
         if (isRunning) return true
@@ -45,9 +43,5 @@ class V2RayController private constructor(private val context: Context) {
         isRunning = false
         val intent = Intent(context, V2RayService::class.java)
         context.stopService(intent)
-    }
-
-    fun setRunning(running: Boolean) {
-        isRunning = running
     }
 }

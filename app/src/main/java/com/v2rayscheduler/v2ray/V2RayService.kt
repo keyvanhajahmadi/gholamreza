@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
+import go.Seq
 import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
 import libv2ray.Libv2ray
@@ -17,26 +18,25 @@ class V2RayService : VpnService() {
 
     private var vpnInterface: ParcelFileDescriptor? = null
     private var coreController: CoreController? = null
-    private var configJson: String? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        val filesDir = filesDir.absolutePath
-        Libv2ray.initCoreEnv(filesDir, "")
+        Seq.setContext(this)
+        Libv2ray.initCoreEnv(filesDir.absolutePath, "")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        configJson = intent?.getStringExtra("config") ?: return START_NOT_STICKY
+        val configJson = intent?.getStringExtra("config") ?: return START_NOT_STICKY
 
         startForeground(NOTIFICATION_ID, buildNotification())
 
-        startVPN()
+        startVPN(configJson)
 
         return START_STICKY
     }
 
-    private fun startVPN() {
+    private fun startVPN(configJson: String) {
         try {
             val builder = Builder().apply {
                 setMtu(1500)
@@ -49,23 +49,18 @@ class V2RayService : VpnService() {
             vpnInterface = establish()
             if (vpnInterface == null) return
 
-            val fd = vpnInterface!!.fd
+            val tunFd = vpnInterface!!.fd
 
-            coreController = CoreController(object : CoreCallbackHandler {
-                override fun startup(): Int {
-                    V2RayController.getInstance(this@V2RayService).setRunning(true)
+            coreController = Libv2ray.newCoreController(object : CoreCallbackHandler {
+                override fun startup(): Long = 0
+                override fun shutdown(): Long {
+                    stopSelf()
                     return 0
                 }
-                override fun shutdown(): Int {
-                    V2RayController.getInstance(this@V2RayService).setRunning(false)
-                    return 0
-                }
-                override fun onEmitStatus(status: Int, msg: String): Int {
-                    return 0
-                }
+                override fun onEmitStatus(l: Long, s: String?): Long = 0
             })
 
-            coreController?.startLoop(configJson, fd)
+            coreController?.startLoop(configJson, tunFd)
 
         } catch (e: Exception) {
             stopVPN()
@@ -81,7 +76,6 @@ class V2RayService : VpnService() {
             vpnInterface?.close()
         } catch (_: Exception) { }
         vpnInterface = null
-        V2RayController.getInstance(this).setRunning(false)
     }
 
     override fun onDestroy() {
@@ -99,12 +93,8 @@ class V2RayService : VpnService() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "V2Ray Service",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "V2Ray VPN connection"
-            }
+                CHANNEL_ID, "V2Ray Service", NotificationManager.IMPORTANCE_LOW
+            ).apply { description = "V2Ray VPN connection" }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
