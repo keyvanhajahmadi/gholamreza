@@ -14,6 +14,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - name: Download libv2ray AAR
+        run: |
+          mkdir -p app/libs
+          curl -L -o app/libs/libv2ray.aar \
+            "https://github.com/2dust/AndroidLibXrayLite/releases/download/v26.5.9/libv2ray.aar"
       - name: Generate Gradle Wrapper
         run: gradle wrapper --gradle-version 8.5
       - name: Build APK

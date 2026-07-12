@@ -2,9 +2,8 @@ package com.v2rayscheduler.v2ray
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import androidx.core.content.FileProvider
-import java.io.File
+import android.net.VpnService
+import com.v2rayscheduler.model.ConnectionState
 
 class V2RayController private constructor(private val context: Context) {
 
@@ -19,35 +18,36 @@ class V2RayController private constructor(private val context: Context) {
         }
     }
 
+    val state: ConnectionState
+        get() = if (isRunning) ConnectionState.CONNECTED else ConnectionState.DISCONNECTED
+
+    private var isRunning = false
+
     fun startV2Ray(configContent: String): Boolean {
-        return try {
-            val file = File(context.cacheDir, "v2ray_config.json")
-            file.writeText(configContent)
+        if (isRunning) return true
 
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
+        val intent = VpnService.prepare(context)
+        if (intent != null) return false
 
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/json")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            val serviceIntent = Intent(context, V2RayService::class.java).apply {
+                putExtra("config", configContent)
             }
-            context.startActivity(intent)
-            true
+            context.startForegroundService(serviceIntent)
+            isRunning = true
+            return true
         } catch (_: Exception) {
-            false
+            return false
         }
     }
 
     fun stopV2Ray() {
-        try {
-            val intent = Intent(context.packageManager.getLaunchIntentForPackage(
-                "com.v2ray.ang"
-            ))
-            context.startActivity(intent)
-        } catch (_: Exception) { }
+        isRunning = false
+        val intent = Intent(context, V2RayService::class.java)
+        context.stopService(intent)
+    }
+
+    fun setRunning(running: Boolean) {
+        isRunning = running
     }
 }

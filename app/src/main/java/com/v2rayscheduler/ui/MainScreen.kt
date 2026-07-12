@@ -12,16 +12,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.v2rayscheduler.model.ConnectionState
 import com.v2rayscheduler.model.ScheduleConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     schedules: List<ScheduleConfig>,
+    connectionState: ConnectionState,
     onAddSchedule: () -> Unit,
     onEditSchedule: (ScheduleConfig) -> Unit,
     onDeleteSchedule: (ScheduleConfig) -> Unit,
-    onToggleSchedule: (ScheduleConfig) -> Unit
+    onToggleSchedule: (ScheduleConfig) -> Unit,
+    onToggleConnection: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -44,6 +47,13 @@ fun MainScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            ConnectionStatusCard(
+                state = connectionState,
+                onToggle = onToggleConnection
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text(
                 text = "Scheduled Tasks",
                 style = MaterialTheme.typography.titleMedium,
@@ -65,6 +75,63 @@ fun MainScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConnectionStatusCard(
+    state: ConnectionState,
+    onToggle: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when (state) {
+                ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primaryContainer
+                ConnectionState.DISCONNECTED -> MaterialTheme.colorScheme.surfaceVariant
+                ConnectionState.CONNECTING -> MaterialTheme.colorScheme.tertiaryContainer
+                ConnectionState.ERROR -> MaterialTheme.colorScheme.errorContainer
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "Connection Status",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Text(
+                    text = when (state) {
+                        ConnectionState.CONNECTED -> "Connected"
+                        ConnectionState.DISCONNECTED -> "Disconnected"
+                        ConnectionState.CONNECTING -> "Connecting..."
+                        ConnectionState.ERROR -> "Error"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = when (state) {
+                        ConnectionState.CONNECTED -> MaterialTheme.colorScheme.primary
+                        ConnectionState.ERROR -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+            FilledTonalButton(onClick = onToggle) {
+                Icon(
+                    imageVector = if (state == ConnectionState.CONNECTED)
+                        Icons.Default.PowerSettingsNew else Icons.Default.PlayArrow,
+                    contentDescription = null
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(if (state == ConnectionState.CONNECTED) "Stop" else "Start")
             }
         }
     }
